@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vishnu — Daily Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #161b22; } ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ─── Schedule data ────────────────────────────────────────────────────────────
+const PHOTO_ANCHOR = new Date(2026, 3, 18); // April 18, 2026
+
+const GYM = {
+  push: "Bench Press · OHP · Incline DB Press · Lateral Raise · Tricep Pushdown · Myotatic Crunch\nProgressive overload when top of rep range hit for all sets.",
+  pull: "Deadlift · Lat Pulldown · RDL · Barbell Curl · Dumbbell Curl · Vacuum Holds\nVacuum: exhale fully, hold 10s × 10.",
+  legs: "Squat · Leg Press · Seated Leg Curl · Leg Extension · Dumbbell OHP\nProgressive overload when top of rep range hit for all sets.",
+};
+
+const CAT = {
+  fitness:   { bg:"#1a2a3a", border:"#2e5a8e", accent:"#58a6ff", label:"Fitness" },
+  nutrition: { bg:"#162312", border:"#2ea043", accent:"#3fb950", label:"Nutrition" },
+  creative:  { bg:"#1f1535", border:"#6f42c1", accent:"#a78bfa", label:"Creative" },
+  learning:  { bg:"#2a1f0a", border:"#9e6a03", accent:"#f0a940", label:"Learning" },
+  wellbeing: { bg:"#1a1e26", border:"#444c56", accent:"#8b949e", label:"Wellbeing" },
+};
+
+function isPhotoSat(date) {
+  if (date.getDay() !== 6) return false;
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const a = new Date(PHOTO_ANCHOR); a.setHours(0,0,0,0);
+  const diff = Math.round((d - a) / 86400000);
+  return diff >= 0 && diff % 14 === 0;
+}
+
+function getSchedule(date) {
+  const d = date.getDay();
+  const events = [];
+  const add = (sh, sm, eh, em, title, sub, cat, icon) =>
+    events.push({ sh, sm, eh, em, title, sub, cat, icon,
+      startMins: sh*60+sm, endMins: eh*60+em });
+
+  if (d === 0) {
+    add(9,0,9,30,"Yoga / Mobility","Hip flexors · thoracic spine · hamstrings\nYouTube: Yoga with Adriene","fitness","🧘");
+    add(15,0,16,30,"Coding / Build Session","90 min · Build something small · Ship one feature this week","learning","💻");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,0,20,30,"Weekly Journal + Planning","Weight check-in · What went well? · What to do differently? · 3 intentions","wellbeing","📓");
+    add(21,30,21,45,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 1) {
+    add(17,30,19,0,"Gym — Push Day",GYM.push,"fitness","💪");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,30,20,55,"Guitar Practice","Chord transitions + strumming · 10 min scales, 15 min songs · 1 new song/month","creative","🎸");
+    add(22,0,22,15,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 2) {
+    add(19,0,20,30,"Martial Arts Class","BJJ · Muay Thai · or Silat · Enrol in a local KL class","fitness","🥋");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,0,20,25,"Mandarin Study (HSK 1)","HelloChinese or Duolingo · Tones + pinyin + 50 core words · Target: HSK 1 by end 2026","learning","🈶");
+    add(20,30,21,15,"Reading","45 min · No screens · Physical book or e-reader · 1 book/month minimum","wellbeing","📚");
+    add(21,30,21,45,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 3) {
+    add(17,30,19,0,"Gym — Pull Day",GYM.pull,"fitness","🏋");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,30,20,55,"Guitar Practice","Chord transitions + strumming · 10 min scales, 15 min songs · 1 new song/month","creative","🎸");
+    add(22,0,22,15,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 4) {
+    add(19,0,20,30,"Martial Arts Class","BJJ · Muay Thai · or Silat · Enrol in a local KL class","fitness","🥋");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,0,20,25,"Mandarin Study (HSK 1)","HelloChinese or Duolingo · Tones + pinyin + 50 core words · Target: HSK 1 by end 2026","learning","🈶");
+    add(20,30,21,15,"Reading","45 min · No screens · Physical book or e-reader · 1 book/month minimum","wellbeing","📚");
+    add(21,30,21,45,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 5) {
+    add(17,30,19,0,"Gym — Leg Day",GYM.legs,"fitness","🦵");
+    add(19,15,20,0,"OMAD — Eat Now","CPB meal from freezer · Reheat 4-5 min · No eating outside this window","nutrition","🍽");
+    add(20,30,20,55,"Guitar Practice","Chord transitions + strumming · 10 min scales, 15 min songs · 1 new song/month","creative","🎸");
+    add(22,0,22,15,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+  if (d === 6) {
+    if (isPhotoSat(date))
+      add(10,0,11,30,"Photography Practice","90 min outdoor shoot · Pick one theme · Review + edit same evening","creative","📷");
+    add(20,0,20,25,"Mandarin Study (HSK 1)","HelloChinese or Duolingo · Tones + pinyin + 50 core words · Target: HSK 1 by end 2026","learning","🈶");
+    add(20,30,21,15,"Chess Study","Chess.com puzzles (15 min) + one full game analysis (30 min)","learning","♟");
+    add(21,30,21,45,"Evening Meditation","15 min · Insight Timer or Headspace · Breath focus · No phone after","wellbeing","🧠");
+  }
+
+  return events.sort((a,b) => a.startMins - b.startMins);
+}
+
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAY_TYPE = {
+  0:"Rest & Recharge", 1:"Push Day", 2:"Martial Arts", 3:"Pull Day",
+  4:"Martial Arts", 5:"Leg Day", 6:"Weekend"
+};
+const GYM_DAYS = [1,3,5];
+
+function fmt12(h, m) {
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hh = h % 12 || 12;
+  return `${hh}:${String(m).padStart(2,"0")} ${ampm}`;
+}
+function fmtDuration(mins) {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins/60), m = mins%60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+function fmtCountdown(mins) {
+  if (mins <= 0) return "Now";
+  if (mins < 60) return `in ${mins}m`;
+  const h = Math.floor(mins/60), m = mins%60;
+  return m ? `in ${h}h ${m}m` : `in ${h}h`;
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
+function EventCard({ ev, nowMins, isNext }) {
+  const c = CAT[ev.cat];
+  const isPast = nowMins >= ev.endMins;
+  const isActive = nowMins >= ev.startMins && nowMins < ev.endMins;
+  const progress = isActive
+    ? Math.round(((nowMins - ev.startMins) / (ev.endMins - ev.startMins)) * 100)
+    : 0;
+
+  return (
+    <div style={{
+      background: isPast ? "#0d1117" : c.bg,
+      border: `1px solid ${isActive ? c.accent : isPast ? "#21262d" : c.border}`,
+      borderRadius: 10, padding: "14px 16px", marginBottom: 8,
+      opacity: isPast ? 0.45 : 1,
+      boxShadow: isActive ? `0 0 0 1px ${c.accent}40, 0 4px 16px ${c.accent}20` : "none",
+      transition: "all 0.3s ease",
+      position: "relative", overflow: "hidden",
+    }}>
+      {isActive && (
+        <div style={{
+          position:"absolute", bottom:0, left:0, height:3,
+          width:`${progress}%`, background:c.accent,
+          borderRadius:"0 2px 0 0", transition:"width 1s linear"
+        }}/>
+      )}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+        <div style={{ flex:1 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+            <span style={{ fontSize:18 }}>{ev.icon}</span>
+            <span style={{
+              fontWeight:600, fontSize:15,
+              color: isActive ? "#e6edf3" : isPast ? "#6e7681" : "#c9d1d9"
+            }}>{ev.title}</span>
+            {isActive && (
+              <span style={{
+                background:c.accent, color:"#000", fontSize:11, fontWeight:700,
+                padding:"2px 7px", borderRadius:20, letterSpacing:"0.05em"
+              }}>NOW</span>
+            )}
+            {isNext && !isActive && (
+              <span style={{
+                background:"#21262d", color:c.accent, fontSize:11, fontWeight:600,
+                padding:"2px 7px", borderRadius:20, border:`1px solid ${c.border}`
+              }}>NEXT</span>
+            )}
+          </div>
+          <div style={{ fontSize:12, color: isPast ? "#484f58" : "#8b949e", lineHeight:1.5 }}>
+            {ev.sub.split("·")[0].trim()}{ev.sub.includes("·") ? " · ···" : ""}
+          </div>
+        </div>
+        <div style={{ textAlign:"right", flexShrink:0 }}>
+          <div style={{ fontSize:13, fontWeight:600, color: isActive ? c.accent : "#8b949e" }}>
+            {fmt12(ev.sh, ev.sm)}
+          </div>
+          <div style={{ fontSize:11, color:"#484f58" }}>
+            {fmtDuration(ev.endMins - ev.startMins)}
+          </div>
+          {!isPast && !isActive && (
+            <div style={{ fontSize:11, color:c.accent, marginTop:2 }}>
+              {fmtCountdown(ev.startMins - nowMins)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WeekStrip({ today }) {
+  const day = today.getDay();
+  return (
+    <div style={{
+      display:"flex", gap:4, justifyContent:"center",
+      background:"#161b22", borderRadius:10, padding:"10px 16px",
+      border:"1px solid #21262d"
+    }}>
+      {["M","T","W","T","F","S","S"].map((d, i) => {
+        const dayIdx = [1,2,3,4,5,6,0][i];
+        const isToday = dayIdx === day;
+        const isGym = GYM_DAYS.includes(dayIdx);
+        return (
+          <div key={i} style={{ textAlign:"center", flex:1 }}>
+            <div style={{
+              fontSize:11, fontWeight:600, marginBottom:4,
+              color: isToday ? "#e6edf3" : "#484f58"
+            }}>{d}</div>
+            <div style={{
+              width:28, height:28, borderRadius:"50%", margin:"0 auto",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              background: isToday ? "#1f6feb" : "transparent",
+              border: isToday ? "none" : "1px solid transparent",
+              fontSize:11, fontWeight:700,
+              color: isToday ? "#fff" : "#8b949e"
+            }}>
+              {isGym ? "G" : dayIdx === 0 ? "R" : dayIdx === 6 ? "W" : "M"}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Main Dashboard ────────────────────────────────────────────────────────────
+function Dashboard() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const day = now.getDay();
+  const nowMins = now.getHours()*60 + now.getMinutes();
+  const events = getSchedule(now);
+  const nextEvent = events.find(e => nowMins < e.startMins);
+  const activeEvent = events.find(e => nowMins >= e.startMins && nowMins < e.endMins);
+  const focusEvent = activeEvent || nextEvent;
+  const fc = focusEvent ? CAT[focusEvent.cat] : null;
+
+  const timeStr = now.toLocaleTimeString("en-MY", {
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:true
+  });
+  const dateStr = `${DAY_NAMES[day]}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+  const allDone = events.length > 0 && events.every(e => nowMins >= e.endMins);
+  const isMorning = nowMins < events[0]?.startMins;
+
+  return (
+    <div style={{
+      maxWidth: 480, margin:"0 auto", padding: "20px 16px",
+      minHeight:"100vh", display:"flex", flexDirection:"column", gap:12
+    }}>
+      {/* Header */}
+      <div style={{
+        background:"#161b22", borderRadius:12, padding:"16px 20px",
+        border:"1px solid #21262d"
+      }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+          <div>
+            <div style={{ fontSize:13, color:"#8b949e", marginBottom:2 }}>{dateStr}</div>
+            <div style={{
+              fontSize:30, fontWeight:700, letterSpacing:"-0.5px",
+              fontVariantNumeric:"tabular-nums", color:"#e6edf3"
+            }}>{timeStr}</div>
+          </div>
+          <div style={{
+            background:"#1f6feb20", border:"1px solid #1f6feb50",
+            borderRadius:8, padding:"6px 12px",
+            fontSize:13, fontWeight:600, color:"#58a6ff"
+          }}>
+            {DAY_TYPE[day]}
+          </div>
+        </div>
+      </div>
+
+      {/* Focus card */}
+      {focusEvent && fc && (
+        <div style={{
+          background: fc.bg,
+          border:`1px solid ${fc.accent}`,
+          borderRadius:12, padding:"16px 18px",
+          boxShadow:`0 4px 24px ${fc.accent}18`
+        }}>
+          <div style={{ fontSize:11, fontWeight:700, color:fc.accent, letterSpacing:"0.08em", marginBottom:8 }}>
+            {activeEvent ? "▶ HAPPENING NOW" : "⏱ UP NEXT"}
+          </div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+            <div>
+              <div style={{ fontSize:20, marginBottom:4 }}>{focusEvent.icon}</div>
+              <div style={{ fontWeight:700, fontSize:17, color:"#e6edf3", marginBottom:4 }}>
+                {focusEvent.title}
+              </div>
+              <div style={{ fontSize:12, color:"#8b949e", lineHeight:1.5, maxWidth:260 }}>
+                {focusEvent.sub.split("·")[0].trim()}
+              </div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:22, fontWeight:700, color:fc.accent }}>
+                {fmt12(focusEvent.sh, focusEvent.sm)}
+              </div>
+              <div style={{ fontSize:13, color:"#8b949e" }}>
+                → {fmt12(focusEvent.eh, focusEvent.em)}
+              </div>
+              {!activeEvent && (
+                <div style={{ fontSize:13, fontWeight:600, color:fc.accent, marginTop:4 }}>
+                  {fmtCountdown(focusEvent.startMins - nowMins)}
+                </div>
+              )}
+              {activeEvent && (
+                <div style={{ fontSize:13, fontWeight:600, color:fc.accent, marginTop:4 }}>
+                  {fmtDuration(focusEvent.endMins - nowMins)} left
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {allDone && (
+        <div style={{
+          background:"#161b22", border:"1px solid #3fb950",
+          borderRadius:12, padding:"16px 18px", textAlign:"center"
+        }}>
+          <div style={{ fontSize:24, marginBottom:4 }}>✅</div>
+          <div style={{ fontWeight:700, color:"#3fb950" }}>All done for today!</div>
+          <div style={{ fontSize:13, color:"#8b949e", marginTop:4 }}>
+            Another day ticked off. Rest well.
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div style={{
+        background:"#161b22", borderRadius:12, padding:"14px 14px",
+        border:"1px solid #21262d"
+      }}>
+        <div style={{
+          fontSize:11, fontWeight:700, color:"#8b949e", letterSpacing:"0.08em",
+          marginBottom:12, paddingLeft:2
+        }}>TODAY'S SCHEDULE</div>
+        {events.length === 0 ? (
+          <div style={{ textAlign:"center", color:"#484f58", fontSize:14, padding:"20px 0" }}>
+            Nothing scheduled today
+          </div>
+        ) : (
+          events.map((ev, i) => (
+            <EventCard
+              key={i} ev={ev} nowMins={nowMins}
+              isNext={nextEvent && ev.startMins === nextEvent.startMins && !activeEvent}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Week strip */}
+      <WeekStrip today={now} />
+
+      {/* Footer */}
+      <div style={{
+        textAlign:"center", fontSize:11, color:"#30363d", paddingBottom:8
+      }}>
+        G = Gym · M = Mixed · W = Weekend · R = Rest — Auto-refreshes every second
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<Dashboard />, document.getElementById("root"));
+</script>
+</body>
+</html>
